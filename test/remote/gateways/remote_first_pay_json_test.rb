@@ -8,8 +8,28 @@ class RemoteFirstPayJsonTest < Test::Unit::TestCase
     @credit_card = credit_card('4111111111111111')
     @declined_card = credit_card('5130405452262903')
 
+    @google_pay = network_tokenization_credit_card(
+      '4005550000000019',
+      brand: 'visa',
+      eci: '05',
+      month: '02',
+      year: '2035',
+      source: :google_pay,
+      payment_cryptogram: 'EHuWW9PiBkWvqE5juRwDzAUFBAk='
+    )
+    @apple_pay = network_tokenization_credit_card(
+      '4005550000000019',
+      brand: 'visa',
+      eci: '05',
+      month: '02',
+      year: '2035',
+      source: :apple_pay,
+      payment_cryptogram: 'EHuWW9PiBkWvqE5juRwDzAUFBAk='
+    )
+
     @options = {
       order_id: SecureRandom.hex(24),
+      billing_address: address,
       description: 'Store Purchase'
     }
   end
@@ -25,6 +45,20 @@ class RemoteFirstPayJsonTest < Test::Unit::TestCase
     assert_failure response
     assert_equal 'isError', response.error_code
     assert_match 'Declined', response.message
+  end
+
+  def test_successful_purchase_with_google_pay
+    response = @gateway.purchase(@amount, @google_pay, @options)
+    assert_success response
+    assert_match 'APPROVED', response.message
+    assert_equal 'Visa-GooglePay', response.params['data']['cardType']
+  end
+
+  def test_successful_purchase_with_apple_pay
+    response = @gateway.purchase(@amount, @apple_pay, @options)
+    assert_success response
+    assert_match 'APPROVED', response.message
+    assert_equal 'Visa-ApplePay', response.params['data']['cardType']
   end
 
   def test_failed_purchase_with_no_address
