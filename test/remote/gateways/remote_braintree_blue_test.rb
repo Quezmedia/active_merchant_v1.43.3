@@ -290,7 +290,7 @@ class RemoteBraintreeBlueTest < Test::Unit::TestCase
     assert transaction = response.params['braintree_transaction']
     assert transaction['risk_data']
     assert transaction['risk_data']['id']
-    assert_equal 'Not Evaluated', transaction['risk_data']['decision']
+    assert_equal 'Approve', transaction['risk_data']['decision']
     assert_equal false, transaction['risk_data']['device_data_captured']
     assert_equal 'fraud_protection', transaction['risk_data']['fraud_service_provider']
   end

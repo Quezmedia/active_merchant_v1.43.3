@@ -1069,7 +1069,7 @@ module ActiveMerchant #:nodoc:
         Response.new(
           result.success?,
           message_from_result(result),
-          { customer_vault_id: customer_id, 'exists': true }
+          { customer_vault_id: customer_id, exists: true }
         )
       end
     end
