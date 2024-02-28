@@ -42,7 +42,7 @@ module ActiveMerchant #:nodoc:
           xml.ssl_vendor_id         @options[:ssl_vendor_id] || options[:ssl_vendor_id]
           xml.ssl_transaction_type  self.actions[:purchase]
           xml.ssl_amount            amount(money)
-          add_token_or_card(xml, payment_method, options)
+          add_payment(xml, payment_method, options)
           add_invoice(xml, options)
           add_salestax(xml, options)
           add_currency(xml, money, options)
@@ -61,7 +61,7 @@ module ActiveMerchant #:nodoc:
           xml.ssl_vendor_id         @options[:ssl_vendor_id] || options[:ssl_vendor_id]
           xml.ssl_transaction_type  self.actions[:authorize]
           xml.ssl_amount            amount(money)
-          add_token_or_card(xml, payment_method, options)
+          add_payment(xml, payment_method, options)
           add_invoice(xml, options)
           add_salestax(xml, options)
           add_currency(xml, money, options)
@@ -193,11 +193,13 @@ module ActiveMerchant #:nodoc:
 
       private
 
-      def add_token_or_card(xml, payment_method, options)
-        if payment_method.is_a?(String) || options[:ssl_token]
-          xml.ssl_token options[:ssl_token] || payment_method
+      def add_payment(xml, payment, options)
+        if payment.is_a?(String) || options[:ssl_token]
+          xml.ssl_token options[:ssl_token] || payment
+        elsif payment.is_a?(NetworkTokenizationCreditCard)
+          add_network_token(xml, payment, options)
         else
-          add_creditcard(xml, payment_method, options)
+          add_creditcard(xml, payment, options)
         end
       end
 
@@ -212,6 +214,21 @@ module ActiveMerchant #:nodoc:
 
       def add_txn_id(xml, authorization)
         xml.ssl_txn_id authorization.split(';').last
+      end
+
+      def add_network_token(xml, payment_method, options)
+        case payment_method.source
+        when :apple_pay
+          xml.ssl_applepay_web payment_method.payment_data
+
+          if billing_address = options[:billing_address] || options[:address]
+            xml.ssl_applepay_billing billing_address
+          elsif shipping_address = options[:shipping_address]
+            xml.ssl_applepay_shipping shipping_address
+          end
+        when :google_pay
+          xml.ssl_google_pay payment_method.payment_data
+        end
       end
 
       def add_creditcard(xml, creditcard, options)
